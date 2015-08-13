@@ -42,8 +42,8 @@ E-mail spam filtering based on content-matching rules.
 
 ### Ports
 - `SMTP`: 25
-- `IMAP`: 143
-- `POP3`: 110
+- `IMAP`: 143 or 993 (SSL/TLS)
+- `POP3`: 110 or 995 (SSL/TLS)
 
 ## Database Design
 The SQL queries are defined in config files and used by Haraka and Dovecot. When changing the tables you must modify the following SQL queries in:
@@ -109,6 +109,20 @@ id  | name| password  | domain | uid | gid | gecos | home          | quota
 --- | --- | --------- | ------ | --- | --- | ----- | ------------- | -----
 1   | baz | \$1\$x5b..| qux    | 8   | 8   | baz   | /data/qux/baz | 2
 
+## SSL configuration
+The placement of files enables the use of SSL/TLS (and STARTTLS).
+
+#### Certificate Location
+Use `/tls/` volume to mount a directory inside the container with the key files.
+
+```
+/tls/tls_key.pem
+/tls/tls_cert.pem
+```
+
+### Password protected key files
+SSL key files may be password protected. Use the `SSL_KEY_PASSWORD` environment variable on Docker to provide the password.
+
 ## Running the Mailserver
 To create a new mail server for your domain you should use the following commands:
 
@@ -132,3 +146,4 @@ Now you can access port 25, 110 and 143.
 - `MYSQL_PASS`:  Password of the MySQL user
 - `MYSQL_DATABASE`: Database name to use
 - `HOSTNAME`:  Server hostname for the container
+- `SSL_KEY_PASSWORD`:  Password for protected SSL key files

@@ -24,8 +24,8 @@ ADD supervisord.ini /etc/supervisor.d/supervisord.ini
 ADD run.sh /usr/local/bin/run
 RUN chmod +x /usr/local/bin/run
 
-EXPOSE 25 110 143
+EXPOSE 25 110 143 993 995
 
-VOLUME /data/
+VOLUME ["/data/", "/tls/"]
 
 CMD ["/usr/local/bin/run"]
