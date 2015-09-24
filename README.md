@@ -13,12 +13,124 @@ Haraka SMTP Email Server with Dovecot and MySQL backend. This container includes
 - MySQL Server
 
 ## Installation
+
     docker pull mazelab/haraka-dovecot:latest
 
 ## Quick Start
-Start a `mail` server instance:
 
-    docker run --name some-mail -e HOSTNAME=mailserver.tld -d mazelab/haraka-dovecot
+#### Start a `mysql` instance
+  
+Skip if you want to use your own mysql server.
+
+    docker run -d --name mysql-mail -e MYSQL_ROOT_PASSWORD=my-secret-pw -e MYSQL_DATABASE=mail-sample mysql
+
+#### Start a `mail` server instance:
+
+If you use your own mysql server you have to set the [environment variables](#environment-variables) accordingly. 
+
+    docker run -d -v /home/mail/dirs/:/data/ -p 25:25 -p 110:110 -p 143:143 -e HOSTNAME=mail.dev --link mysql-mail:mysql -e MYSQL_HOST=mysql -e MYSQL_PORT=3306 -e MYSQL_USER=root -e MYSQL_PASS=my-secret-pw -e MYSQL_DATABASE=mail --name mail-sample mazelab/haraka-dovecot
+
+#### Setup database
+
+To actually use the mail server you have to initialize the database.
+
+Import the database structure.
+
+If you used the above mysql container then do:
+
+    docker exec -it mysql-mail mysql -u root -pmy-secret-pw mail-sample
+    
+Then copy/paste the dump and close the shell with `exit` 
+
+Dump:
+   
+    /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+    /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+    /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+    /*!40101 SET NAMES utf8 */;
+    /*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+    /*!40103 SET TIME_ZONE='+00:00' */;
+    /*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+    /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+    /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+    /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+    
+    --
+    -- Table structure for table `expires`
+    --
+    
+    /*!40101 SET @saved_cs_client     = @@character_set_client */;
+    /*!40101 SET character_set_client = utf8 */;
+    CREATE TABLE `expires` (
+      `username` varchar(100) NOT NULL,
+      `mailbox` varchar(255) NOT NULL,
+      `expire_stamp` int(11) NOT NULL,
+      PRIMARY KEY (`username`,`mailbox`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+    /*!40101 SET character_set_client = @saved_cs_client */;
+    
+    --
+    -- Table structure for table `quota`
+    --
+    
+    /*!40101 SET @saved_cs_client     = @@character_set_client */;
+    /*!40101 SET character_set_client = utf8 */;
+    CREATE TABLE `quota` (
+      `username` varchar(100) NOT NULL,
+      `bytes` bigint(20) NOT NULL DEFAULT '0',
+      `messages` int(11) NOT NULL DEFAULT '0',
+      PRIMARY KEY (`username`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+    /*!40101 SET character_set_client = @saved_cs_client */;
+    
+    --
+    -- Table structure for table `users`
+    --
+    
+    /*!40101 SET @saved_cs_client     = @@character_set_client */;
+    /*!40101 SET character_set_client = utf8 */;
+    CREATE TABLE `users` (
+      `id` int(11) NOT NULL AUTO_INCREMENT,
+      `name` varchar(32) NOT NULL DEFAULT '',
+      `password` varchar(255) NOT NULL DEFAULT '',
+      `domain` varchar(255) NOT NULL DEFAULT '',
+      `uid` int(11) DEFAULT NULL,
+      `gid` int(11) DEFAULT NULL,
+      `gecos` varchar(255) DEFAULT NULL,
+      `home` varchar(255) DEFAULT NULL,
+      `quota` varchar(255) DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      KEY `stress_test_com_idx` (`name`)
+    ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=latin1;
+    /*!40101 SET character_set_client = @saved_cs_client */;
+    
+    /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+    /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+    /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+    /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+    /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+    /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+    /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+### Add User
+
+Get the password first:
+
+    docker exec mail-sample doveadm pw -s MD5-CRYPT -p thepassword
+    {MD5-CRYPT}$1$DpBbHS.2$vHGFpWG4V0aR24JpkiusC/ -> password string is $1$DpBbHS.2$vHGFpWG4V0aR24JpkiusC/
+
+Go into mysql again:
+
+    docker exec -it mysql-mail mysql -u root -pmy-secret-pw mail-sample
+    
+Use query to add new users:
+
+    // email test@test.dev, pw: thepassword, no quota
+    INSERT INTO `users` (name, password, domain, uid, gid, gecos, home, quota) VALUES('test','$1$DpBbHS.2$vHGFpWG4V0aR24JpkiusC/','test.dev',1,0,'this is just a test','/data/test.dev/test','0');
+
+    // email testquota@test.dev, pw: thepassword, 1 MB??? quota
+    INSERT INTO `users` (name, password, domain, uid, gid, gecos, home, quota) VALUES('testquota','$1$DpBbHS.2$vHGFpWG4V0aR24JpkiusC/','test.dev',1,0,'this is just a quota test','/data/test.dev/quota','1');
+
 
 ## Data Store
 Account data is stored in MySQL.
