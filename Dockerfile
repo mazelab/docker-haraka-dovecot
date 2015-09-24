@@ -1,6 +1,6 @@
 FROM mhart/alpine-node:0.12.7
 
-RUN apk-install openssl dovecot dovecot-mysql python spamassassin supervisor make g++ wget
+RUN apk add --update openssl dovecot dovecot-mysql python spamassassin supervisor make g++ wget
 
 # install haraka
 RUN npm install -g Haraka mkdirp mysql
