@@ -2,6 +2,8 @@ Mailserver with Haraka, Dovecot and MySQL
 ----------
 Haraka SMTP Email Server with Dovecot and MySQL backend. This container includes services for SMTP, POP3 and IMAP.
 
+Please note that this is a highly experimental build.
+
 **features:**
 
 - Quota tracking
@@ -28,7 +30,16 @@ Skip if you want to use your own mysql server.
 
 If you use your own mysql server you have to set the [environment variables](#environment-variables) accordingly. 
 
-    docker run -d -v /home/mail/dirs/:/data/ -p 25:25 -p 110:110 -p 143:143 -e HOSTNAME=mail.dev --link mysql-mail:mysql -e MYSQL_HOST=mysql -e MYSQL_PORT=3306 -e MYSQL_USER=root -e MYSQL_PASS=my-secret-pw -e MYSQL_DATABASE=mail --name mail-sample mazelab/haraka-dovecot
+    docker run -d -v /home/mail/dirs/:/data/ -p 25:25 -p 110:110 -p 143:143 -e HOSTNAME=mail.dev --link mysql-mail:mysql -e MYSQL_HOST=mysql -e MYSQL_PORT=3306 -e MYSQL_USER=root -e MYSQL_PASS=my-secret-pw -e MYSQL_DATABASE=mail-sample --name mail-sample mazelab/haraka-dovecot
+
+### File Permissions
+
+Currently the mounted email dir must have the uid 8 which ist the standard mail user. So if you mounted into /data you have to set the permissions accordingly. Otherwise haraka will fail on local delivery and stop.
+
+    # either
+    chown -R mail: /home/mail
+    # or
+    chown -R 8:8 /home/mail
 
 #### Setup database
 
@@ -112,6 +123,12 @@ Dump:
     /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
     /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
+### Add Domain
+
+Haraka needs to know which domains are acceptable. Only email from these domains will be delivered.
+
+    docker exec -it mail-sample sh -c 'echo "test.dev" >> /srv/haraka/config/host_list'
+
 ### Add User
 
 Get the password first:
@@ -125,10 +142,10 @@ Go into mysql again:
     
 Use query to add new users:
 
-    // email test@test.dev, pw: thepassword, no quota
-    INSERT INTO `users` (name, password, domain, uid, gid, gecos, home, quota) VALUES('test','$1$DpBbHS.2$vHGFpWG4V0aR24JpkiusC/','test.dev',1,0,'this is just a test','/data/test.dev/test','0');
+    // email test@test.dev, pw: thepassword, 100 MB quota
+    INSERT INTO `users` (name, password, domain, uid, gid, gecos, home, quota) VALUES('test','$1$DpBbHS.2$vHGFpWG4V0aR24JpkiusC/','test.dev',1,0,'this is just a test','/data/test.dev/test','100');
 
-    // email testquota@test.dev, pw: thepassword, 1 MB??? quota
+    // email testquota@test.dev, pw: thepassword, 1 MB quota
     INSERT INTO `users` (name, password, domain, uid, gid, gecos, home, quota) VALUES('testquota','$1$DpBbHS.2$vHGFpWG4V0aR24JpkiusC/','test.dev',1,0,'this is just a quota test','/data/test.dev/quota','1');
 
 

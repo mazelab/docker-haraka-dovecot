@@ -4,6 +4,7 @@ var DSN = require('./dsn');
 exports.get_user_parts = function(user, next, connection, cb) {
     var name   = user.split("@")[0];
     var domain = user.split("@")[1] || null;
+    //@todo fails when not in rcpt_list... shouldnt be used then in the first place??
     if (domain === null){
         connection.logerror(exports,"Quota: Wrong login format for user ", user);
         return next(DENYSOFT);
@@ -99,6 +100,7 @@ exports.hook_mail = function (next, connection, params) {
             return next(DENYSOFT);
         }
 
+        //@todo quota should only work with numeric values...
         connection.logdebug(exports, "Quota of user ", email, " limit=\""+ user.quota +" M\" used=\""+ user.bytes +" bytes\"");
 
         var usedQuotaInM = (user.bytes / 1048576).toFixed(1);
