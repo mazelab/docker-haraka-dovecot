@@ -11,6 +11,8 @@
 # Log to syslog (see 'haraka -h log.syslog')
 # log.syslog
 
+mysql_provider
+
 # CONNECT
 #toobusy
 #relay
@@ -37,7 +39,7 @@ tls
 # auth/auth_proxy
 # auth/auth_ldap
 # @todo show pass option only with tls
-auth/auth_sql_cryptmd5
+auth/auth_mysql_cryptmd5
 
 # MAIL FROM
 # Only accept mail where the MAIL FROM domain is resolvable to an MX record
@@ -52,12 +54,16 @@ auth/auth_sql_cryptmd5
 # RCPT TO
 # At least one rcpt_to plugin is REQUIRED for inbound email. The simplest
 # plugin is in_host_list, see 'haraka -h rcpt_to.in_host_list' to configure.
-aliases_mysql
-# @todo rcpt_to.mysql
-rcpt_to.in_host_list
+#rcpt_to.in_host_list
 #rcpt_to.qmail_deliverable
 #rcpt_to.ldap
 #rcpt_to.routes
+rcpt_to.mysql
+
+# ALIASES
+# action or change the RCPT address in a number of ways (eg. Forwarder)
+aliases_mysql
+quota_mysql
 
 # drop relaying when inbound flag
 # @todo is this necessary, does this improve anything???, in a sense its reasonable
@@ -73,12 +79,11 @@ data.headers
 spamassassin
 #dkim_sign
 #karma
-quota.check
 
 # LOCAL DELIVERY
 # @todo get concrete Path from mysql???
 # @todo mailfrom is used for .Sent maildir which creates files which can't be used
-maildir/maildir
+maildir
 
 # OUTBOUND
 # @todo does Outbound should get a queue

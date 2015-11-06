@@ -1,0 +1,9 @@
+/var/log/spamd*.log {
+	daily
+	missingok
+	copytruncate
+	rotate 7
+	compress
+	notifempty
+	sharedscripts
+}

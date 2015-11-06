@@ -1,0 +1,9 @@
+/var/log/cron*.log {
+	daily
+	missingok
+	copytruncate
+	rotate 7
+	nocompress
+	notifempty
+	sharedscripts
+}

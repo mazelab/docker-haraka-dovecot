@@ -137,13 +137,3 @@
 
 driver = mysql
 default_pass_scheme = MD5-CRYPT
-
-user_query = \
-    SELECT home, 8 AS uid, 8 AS gid, concat('*:storage=', quota, 'M') AS quota_rule \
-    FROM users \
-    WHERE name = '%n' AND domain = '%d'
-
-password_query = \
-    SELECT CONCAT(name, '@', '%d') AS user, password as password, home as userdb_home, 8 AS userdb_uid, 8 AS userdb_gid \
-    FROM users \
-    WHERE name = '%n' AND domain = '%d'
