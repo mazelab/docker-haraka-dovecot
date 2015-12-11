@@ -1,6 +1,7 @@
 FROM mhart/alpine-node:0.12.7
 
-RUN apk add --update dovecot dovecot-mysql spamassassin supervisor openssl python make g++ wget ca-certificates bash logrotate && \
+RUN adduser -u 127 dovecot -H -D -s /bin/false 137 && adduser -u 128 dovenull -H -D -s /bin/false 138 && \
+      apk add --update dovecot dovecot-mysql spamassassin supervisor openssl python make g++ wget ca-certificates bash logrotate && \
       npm install -g Haraka@2.7.0 mkdirp mysql && \
       mkdir -p /tmp/haraka-plugins /default/haraka-plugins /default/dovecot /data && chown mail: /data && \
       sa-update && \
@@ -30,8 +31,9 @@ COPY docker-entrypoint.sh /entrypoint.sh
 
 EXPOSE 25 110 143 993 995
 
-#@todo change dovecot uid to < 1000
-#@todo improve spamassassin logging
+#@todo documentation
+#@todo loglvl for progs from docker env
+#@todo add some scripts for direct email management -> docu
 VOLUME ["/srv/haraka/", "/data/", "/etc/dovecot/", "/var/log/"]
 
 ENTRYPOINT ["/entrypoint.sh"]

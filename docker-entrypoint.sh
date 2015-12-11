@@ -131,14 +131,12 @@ function fixPermissions() {
   chown -R mail: $HARAKA_DIR/queue
 }
 
-initHaraka
-initDovecot
-initTLS
-fixPermissions
-
 # runtime configuration in order to support mounts
 if [[ "$*" == supervisord* ]]; then
-  echo "supervisord"
+  initHaraka
+  initDovecot
+  initTLS
+  fixPermissions
 fi
 
 exec "$@"

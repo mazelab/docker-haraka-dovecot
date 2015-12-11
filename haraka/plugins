@@ -18,13 +18,13 @@ mysql_provider
 #relay
 # control which IPs, rDNS hostnames, HELO hostnames, MAIL FROM addresses, and
 # RCPT TO address you accept mail from. See 'haraka -h access'.
-#access
+access
 # connect.p0f
 # connect.geoip
 # connect.asn
 # connect.fcrdns
 # block mails from known bad hosts (see config/dnsbl.zones for the DNS zones queried)
-#dnsbl
+dnsbl
 
 # HELO
 #early_talker
@@ -38,13 +38,11 @@ tls
 # auth/flat_file
 # auth/auth_proxy
 # auth/auth_ldap
-# @todo show pass option only with tls
 auth/auth_mysql_cryptmd5
 
 # MAIL FROM
 # Only accept mail where the MAIL FROM domain is resolvable to an MX record
-# @todo prod necessary?
-#mail_from.is_resolvable
+mail_from.is_resolvable
 #spf
 
 # ALIASES
@@ -65,10 +63,6 @@ rcpt_to.mysql
 aliases_mysql
 quota_mysql
 
-# drop relaying when inbound flag
-# @todo is this necessary, does this improve anything???, in a sense its reasonable
-#rcpt_ok/drop_relaying_when_host_list
-
 # DATA
 #bounce
 # Check mail headers are valid
@@ -84,9 +78,6 @@ spamassassin
 # @todo get concrete Path from mysql???
 # @todo mailfrom is used for .Sent maildir which creates files which can't be used
 maildir
-
-# OUTBOUND
-# @todo does Outbound should get a queue
 
 # Disconnect client if they spew bad SMTP commands at us
 max_unrecognized_commands
