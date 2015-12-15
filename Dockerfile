@@ -20,6 +20,10 @@ ENV DOVECOT_DEFAULT /default/dovecot
 ENV DOVECOT_QUERY_USER "SELECT maildir, 8 AS uid, 12 AS gid, concat('*:storage=', quota, 'M') AS quota_rule FROM users WHERE email = '%u'"
 ENV DOVECOT_QUERY_PASS "SELECT email AS user, password as password, maildir as userdb_home, 8 AS userdb_uid, 12 AS userdb_gid FROM users WHERE email = '%u'"
 
+ENV HA_QUERY_QUOTA "SELECT user.quota, quota.bytes FROM users as user LEFT JOIN quota as quota ON user.email = quota.username WHERE user.email = '%u'"
+
+ENV MYSQL_PORT_NR "3306"
+
 # copy custom config
 COPY dovecot/ $DOVECOT_DEFAULT
 COPY haraka $HARAKA_DEFAULT_CONFIG
@@ -31,9 +35,6 @@ COPY docker-entrypoint.sh /entrypoint.sh
 
 EXPOSE 25 110 143 993 995
 
-#@todo documentation
-#@todo loglvl for progs from docker env
-#@todo add some scripts for direct email management -> docu
 VOLUME ["/srv/haraka/", "/data/", "/etc/dovecot/", "/var/log/"]
 
 ENTRYPOINT ["/entrypoint.sh"]

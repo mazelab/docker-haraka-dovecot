@@ -1,137 +1,172 @@
 Mailserver with Haraka, Dovecot and MySQL
 ----------
-Haraka SMTP Email Server with Dovecot and MySQL backend. This container includes services for SMTP, POP3 and IMAP.
+Haraka SMTP Email Server with Dovecot and MySQL backend. 
+This container includes services for SMTP, POP3 and IMAP.
 
-Please note that this is a highly experimental build.
+**Features:**
 
-**features:**
-
-- Quota tracking
-- Spam filtering
-- MD5-Crypt authentication
+- Spam detection
+- Quota
+- TLS
 - Forwarder (alias) support
 
-## Requirement
+## Requirements
+
 - MySQL Server
 
 ## Installation
 
+Automated builds are available on [dockerhub](https://hub.docker.com/r/mazelab/haraka-dovecot/):
+
     docker pull mazelab/haraka-dovecot:latest
+    
+Or trigger a build locally:
+
+    docker build -t mazelab/haraka-dovecot github.com/mazelab/docker-haraka-dovecot
+
 
 ## Quick Start
 
-#### Start a `mysql` instance
-  
-Skip if you want to use your own mysql server.
+This container uses an external MySQL service as the backend. The MySQL queries can be configured through environment variables. See Mysql and environment variables for more explanation on that part.
+
+Start server with external mysql:
+
+    docker run -d -p 25:25 -p 110:110 -p 143:143 -e HOSTNAME=mail.dev -e MYSQL_HOST=mysql.dev -e MYSQL_USER=root -e MYSQL_PASS=my-secret-pw -e MYSQL_DATABASE=mail-sample --name mail-sample mazelab/haraka-dovecot
+    
+Show logs:
+
+    docker exec -it mail-sample sh -c 'tail -f /var/log/*.log'
+
+
+## Environment variables
+
+For docker container hostname use -e mail.dev or -h mail.dev.
+
+- `HOSTNAME`: Server hostname for the container
+- `MYSQL_HOST`: Server address of the MySQL server
+- `MYSQL_PORT_NR`: Server port of the MySQL server (default: 3306)
+- `MYSQL_USER`: Username for mysql access
+- `MYSQL_PASS`: Password for mysql access
+- `MYSQL_DATABASE`: Database name to use
+- `MYSQL_CHARSET`: MySQL charset on connections (default: UTF-8)
+
+Haraka:
+
+A detailed documentation for the plugins can be found [here](https://github.com/mazelab/haraka-plugins).
+
+- `HA_QUERY_AUTH`: Haraka mysql query to to authorize a login request
+- `HA_QUERY_QUOTA`: Haraka mysql query to fetch quota data
+- `HA_QUERY_RCPT_TO`: Haraka mysql query to check if email target exists in database
+- `HA_QUERY_ALIASES`: Haraka mysql query to fetch alias data of the target email
+
+Dovecot:
+
+- `DOVECOT_QUERY_USER`: Dovecot mysql query to fetch user data
+- `DOVECOT_QUERY_PASS`: Dovecot mysql query to fetch user password
+
+
+## Advanced examples
+
+Server with mounted mail content:
+
+    docker run -p 25:25 -p 110:110 -p 143:143 -v /my/mailContent/:/data/ mazelab/haraka-dovecot
+
+Server with mounted logs:
+
+    docker run -p 25:25 -p 110:110 -p 143:143 -v /my/logs/:/var/logs mazelab/haraka-dovecot
+
+Server with custom certificates:
+
+    docker run -p 25:25 -p 110:110 -p 143:143 -v /my/tls_key.pem:/default/haraka-plugins/config/tls_key.pem -v /my/tls_cert.pem:/default/haraka-plugins/config/tls_cert.pem mazelab/haraka-dovecot
+    
+Server with custom Haraka:
+
+    docker run -p 25:25 -p 110:110 -p 143:143 -v /my/haraka/:/srv/haraka mazelab/haraka-dovecot
+
+Server with custom dovecot:
+
+    docker run -p 25:25 -p 110:110 -p 143:143 -v /my/dovecot/:/etc/dovecot mazelab/haraka-dovecot
+
+
+## Other
+
+### Quota
+
+Dovecot keeps track of the current quota usage. MySQL is used to store the quota.
+The MySQL definition is more static and only configurable in /etc/dovecot/dovecot-dict-sql.conf.ext. 
+It is not necessary to edit this table. It is solely managed by dovecot (except table creation). Haraka only reads the used quota. 
+So if dovecot-dict-sql.conf.ext was changed you probably have to change the HA_QUERY_QUOTA env.
+
+### SpamAssassin
+
+E-mail spam detection based on content-matching rules. Flags detected emails with a *** Spam *** addition in the subject.
+
+### SSL
+
+The container creates a new unsigned certificate when no certificate is available.
+
+#### Certificate Locations
+
+Default:
+
+- /default/haraka-plugins/config/tls_key.pem 
+- /default/haraka-plugins/config/tls_cert.pem
+
+When /srv/haraka is mounted then:
+
+- /srv/haraka/config/tls_cert.pem
+- /srv/haraka/config/tls_key.pem
+
+### Logging
+
+Every service creates logs in /var/log.
+
+
+## Example MySQL setup
+
+If you want a quick database example then do the following:
+
+Create a mysql container
 
     docker run -d --name mysql-mail -e MYSQL_ROOT_PASSWORD=my-secret-pw -e MYSQL_DATABASE=mail-sample mysql
+    
+Start email server with link
 
-#### Start a `mail` server instance:
+    docker run --link mysql-mail:mysql -d -p 25:25 -p 110:110 -p 143:143 -e HOSTNAME=mail.dev -e MYSQL_HOST=mysql -e MYSQL_USER=root -e MYSQL_PASS=my-secret-pw -e MYSQL_DATABASE=mail-sample --name mail-sample  mazelab/haraka-dovecot
 
-If you use your own mysql server you have to set the [environment variables](#environment-variables) accordingly. 
-
-    docker run -d -v /home/mail/dirs/:/data/ -p 25:25 -p 110:110 -p 143:143 -e HOSTNAME=mail.dev --link mysql-mail:mysql -e MYSQL_HOST=mysql -e MYSQL_PORT=3306 -e MYSQL_USER=root -e MYSQL_PASS=my-secret-pw -e MYSQL_DATABASE=mail-sample --name mail-sample mazelab/haraka-dovecot
-
-### File Permissions
-
-Currently the mounted email dir must have the uid 8 which ist the standard mail user. So if you mounted into /data you have to set the permissions accordingly. Otherwise haraka will fail on local delivery and stop.
-
-    # either
-    chown -R mail: /home/mail
-    # or
-    chown -R 8:8 /home/mail
-
-#### Setup database
-
-To actually use the mail server you have to initialize the database.
-
-Import the database structure.
-
-If you used the above mysql container then do:
+Wait a few seconds then execute ...
 
     docker exec -it mysql-mail mysql -u root -pmy-secret-pw mail-sample
-    
-Then copy/paste the dump and close the shell with `exit` 
 
-Dump:
-   
-    /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-    /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-    /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-    /*!40101 SET NAMES utf8 */;
-    /*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-    /*!40103 SET TIME_ZONE='+00:00' */;
-    /*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-    /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-    /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-    /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+... and copy/paste this dump
     
-    --
-    -- Table structure for table `expires`
-    --
-    
-    /*!40101 SET @saved_cs_client     = @@character_set_client */;
-    /*!40101 SET character_set_client = utf8 */;
-    CREATE TABLE `expires` (
-      `username` varchar(100) NOT NULL,
-      `mailbox` varchar(255) NOT NULL,
-      `expire_stamp` int(11) NOT NULL,
-      PRIMARY KEY (`username`,`mailbox`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-    /*!40101 SET character_set_client = @saved_cs_client */;
-    
-    --
-    -- Table structure for table `quota`
-    --
-    
-    /*!40101 SET @saved_cs_client     = @@character_set_client */;
-    /*!40101 SET character_set_client = utf8 */;
-    CREATE TABLE `quota` (
-      `username` varchar(100) NOT NULL,
-      `bytes` bigint(20) NOT NULL DEFAULT '0',
-      `messages` int(11) NOT NULL DEFAULT '0',
-      PRIMARY KEY (`username`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-    /*!40101 SET character_set_client = @saved_cs_client */;
-    
-    --
-    -- Table structure for table `users`
-    --
-    
-    /*!40101 SET @saved_cs_client     = @@character_set_client */;
-    /*!40101 SET character_set_client = utf8 */;
-    CREATE TABLE `users` (
-      `id` int(11) NOT NULL AUTO_INCREMENT,
-      `name` varchar(32) NOT NULL DEFAULT '',
+    CREATE TABLE IF NOT EXISTS `users` (
+      `email` varchar(255) NOT NULL,
       `password` varchar(255) NOT NULL DEFAULT '',
-      `domain` varchar(255) NOT NULL DEFAULT '',
-      `uid` int(11) DEFAULT NULL,
-      `gid` int(11) DEFAULT NULL,
-      `gecos` varchar(255) DEFAULT NULL,
-      `home` varchar(255) DEFAULT NULL,
+      `maildir` varchar(255) DEFAULT NULL,
       `quota` varchar(255) DEFAULT NULL,
-      PRIMARY KEY (`id`),
-      KEY `stress_test_com_idx` (`name`)
-    ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=latin1;
-    /*!40101 SET character_set_client = @saved_cs_client */;
+      PRIMARY KEY (`email`)
+    ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
     
-    /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-    /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-    /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-    /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-    /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-    /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-    /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+    CREATE TABLE IF NOT EXISTS `aliases` (
+      `email` varchar(255) NOT NULL,
+      `action` varchar(255) DEFAULT NULL,
+      `config` varchar(255) DEFAULT NULL,
+      PRIMARY KEY (`email`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+    
+    CREATE TABLE IF NOT EXISTS quota (
+      username varchar(100) not null,
+      bytes bigint not null default 0,
+      messages integer not null default 0,
+      primary key (`username`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+    
+Hit enter and type exit to close the terminal.
 
-### Add Domain
+### Adding Users
 
-Haraka needs to know which domains are acceptable. Only email from these domains will be delivered.
-
-    docker exec -it mail-sample sh -c 'echo "test.dev" >> /srv/haraka/config/host_list'
-
-### Add User
-
-Get the password first:
+Generating a password string:
 
     docker exec mail-sample doveadm pw -s MD5-CRYPT -p thepassword
     {MD5-CRYPT}$1$DpBbHS.2$vHGFpWG4V0aR24JpkiusC/ -> password string is $1$DpBbHS.2$vHGFpWG4V0aR24JpkiusC/
@@ -141,138 +176,26 @@ Go into mysql again:
     docker exec -it mysql-mail mysql -u root -pmy-secret-pw mail-sample
     
 Use query to add new users:
+    
+    // email noquota@test.dev, pw: apassword
+    INSERT INTO `users` (email, password, maildir) VALUES('noquota@test.dev', '$1$DPbCiW2l$NtRkAMOgIzd3l0Q2TUifW/', '/data/test.dev/noquota');
+    
+    // email 100quota@test.dev, pw: rndpass, 100 MB quota
+    INSERT INTO `users` (email, password, maildir, quota) VALUES('100quota@test.dev','$1$U1ziNWes$.sxQoQ/fxeGRBV5eKFqzl/', '/data/test.dev/100quota','100');
+    
+    // email 1quota@test.dev, pw: noword, 1 MB quota
+    INSERT INTO `users` (email, password, maildir, quota) VALUES('1quota@test.dev','$1$p0RKuvbR$/MRQDr6u40jxMG7A1cAcI.', '/data/test.dev/1quota', '1');
 
-    // email test@test.dev, pw: thepassword, 100 MB quota
-    INSERT INTO `users` (name, password, domain, uid, gid, gecos, home, quota) VALUES('test','$1$DpBbHS.2$vHGFpWG4V0aR24JpkiusC/','test.dev',1,0,'this is just a test','/data/test.dev/test','100');
+### Adding Forwarder
 
-    // email testquota@test.dev, pw: thepassword, 1 MB quota
-    INSERT INTO `users` (name, password, domain, uid, gid, gecos, home, quota) VALUES('testquota','$1$DpBbHS.2$vHGFpWG4V0aR24JpkiusC/','test.dev',1,0,'this is just a quota test','/data/test.dev/quota','1');
+    INSERT INTO `aliases` (email, action, config) VALUES('forward@test.dev','alias', 'noquota@test.dev');
+
+    INSERT INTO `aliases` (email, action, config) VALUES('quotas@test.dev','alias', '100quota@test.dev|1quota@test.dev');
 
 
-## Data Store
-Account data is stored in MySQL.
+# Todo
 
-### Maildir
-**mailbox** : All mailboxes are stored in a volume at `/data/`
-
-### Database
-**users**: Contains the user info. e.g. login, maildir path, quota ...
-
-**quota** : Contains the used mailbox size (dovecot will update this table automatically)
-
-**forwarder** : Contains the rules of forwarder (aliases)
-
-## Other
-### Quota 
-Dovecot keeps track of the current quota usage. MySQL is used to store the quota.
-
-### SpamAssassin
-E-mail spam filtering based on content-matching rules.
-
-### Ports
-- `SMTP`: 25
-- `IMAP`: 143 or 993 (SSL/TLS)
-- `POP3`: 110 or 995 (SSL/TLS)
-
-## Database Design
-The SQL queries are defined in config files and used by Haraka and Dovecot. When changing the tables you must modify the following SQL queries in:
-
-- /etc/dovecot/**dovecot-sql.conf.ext**
-- /srv/haraka/config/**aliases_mysql.ini**
-- /srv/haraka/config/**auth_sql_cryptmd5.ini**
-- /srv/haraka/config/**quota.check.ini**
-
-### Create Tables
-Create the tables like this: 
-
-```sql
-CREATE TABLE `users` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(32) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `domain` varchar(255) NOT NULL,
-  `uid` int(11) DEFAULT NULL,
-  `gid` int(11) DEFAULT NULL,
-  `gecos` varchar(255) DEFAULT NULL,
-  `home` varchar(255) NOT NULL,
-  `quota` varchar(255) DEFAULT '0',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB;
-```
-```sql
-CREATE TABLE `forwarder` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `address` varchar(128) NOT NULL,
-  `action` varchar(8) NOT NULL,
-  `aliases` text DEFAULT '',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB;
-```
-```sql
-CREATE TABLE `quota` (
-  `username` varchar(255) NOT NULL,
-  `bytes` bigint(20) NOT NULL DEFAULT '0',
-  `messages` int(11) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`username`)
-) ENGINE=InnoDB;
-```
-### Example datasets
-
-Table *\`quota\`:*
-
-username | bytes | messages
--------- | ----- | --------
-foo@qux  | 1214  | 2
-bar@qux  | 0     | 0
-
-Table *\`forwarder\`:*
-
-id | address | action | aliases
----| ------- | ------ | -------
-1  | foo@qux | drop   | 
-2  | bar@qux | alias  | foo@bar \| foo@qux
-
-Table *\`users\`:*
-
-id  | name| password  | domain | uid | gid | gecos | home          | quota
---- | --- | --------- | ------ | --- | --- | ----- | ------------- | -----
-1   | baz | \$1\$x5b..| qux    | 8   | 8   | baz   | /data/qux/baz | 2
-
-## SSL configuration
-The placement of files enables the use of SSL/TLS (and STARTTLS).
-
-#### Certificate Location
-Use `/tls/` volume to mount a directory inside the container with the key files.
-
-```
-/tls/tls_key.pem
-/tls/tls_cert.pem
-```
-
-### Password protected key files
-SSL key files may be password protected. Use the `SSL_KEY_PASSWORD` environment variable on Docker to provide the password.
-
-## Running the Mailserver
-To create a new mail server for your domain you should use the following commands:
-
-```shell
-docker run -v /home/mail/dirs/:/data/
-    -p 25:25 -p 110:110 -p 143:143
-    -e HOSTNAME=yourdomain.com
-    -e MYSQL_HOST=sql.yourdomain.com
-    -e MYSQL_PORT=3306
-    -e MYSQL_USER=username
-    -e MYSQL_PASS=password
-    -e MYSQL_DATABASE=mail
-    --name mailserver mazelab/haraka-dovecot
-```
-
-Now you can access port 25, 110 and 143.
-
-## Environment variables
-- `MYSQL_HOST`: Server address of the MySQL server to use
-- `MYSQL_USER`: Username to authenticate with
-- `MYSQL_PASS`:  Password of the MySQL user
-- `MYSQL_DATABASE`: Database name to use
-- `HOSTNAME`:  Server hostname for the container
-- `SSL_KEY_PASSWORD`:  Password for protected SSL key files
+- haraka quota and alias plugin not called correctly (rcpt hooks stop on first OK), maybe wrong hook 
+- get concrete Path from mysql???
+- mailfrom is used for .Sent maildir which creates files which can't be used
+- loglvl for progs from docker env

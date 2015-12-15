@@ -49,8 +49,8 @@ function initHaraka() {
   if [ ! -z "$MYSQL_DATABASE" ]; then
     sed -i "s/^database=.*/database=$MYSQL_DATABASE/g" $HARAKA_DIR/config/mysql_provider.ini
   fi
-  if [ ! -z "$MYSQL_PORT" ]; then
-    sed -i "s/^port=.*/port=$MYSQL_PORT/g" $HARAKA_DIR/config/mysql_provider.ini
+  if [ ! -z "$MYSQL_PORT_NR" ]; then
+    sed -i "s/^port=.*/port=$MYSQL_PORT_NR/g" $HARAKA_DIR/config/mysql_provider.ini
   fi
   if [ ! -z "$MYSQL_CHARSET" ]; then
     sed -i "s/^char_set=.*/char_set=$MYSQL_CHARSET/g" $HARAKA_DIR/config/mysql_provider.ini
@@ -76,10 +76,10 @@ function initDovecot() {
   fi
 
   if [ ! "`cat /etc/dovecot/dovecot-sql.conf.ext | grep '^connect'`" ]; then
-    echo "connect = host=$MYSQL_HOST dbname=$MYSQL_DATABASE user=$MYSQL_USER password=$MYSQL_PASS" >> /etc/dovecot/dovecot-sql.conf.ext
+    echo "connect = host=$MYSQL_HOST port=$MYSQL_PORT_NR dbname=$MYSQL_DATABASE user=$MYSQL_USER password=$MYSQL_PASS" >> /etc/dovecot/dovecot-sql.conf.ext
   fi
   if [ ! "`cat /etc/dovecot/dovecot-dict-sql.conf.ext | grep '^connect'`" ]; then
-    echo "connect = host=$MYSQL_HOST dbname=$MYSQL_DATABASE user=$MYSQL_USER password=$MYSQL_PASS" >> /etc/dovecot/dovecot-dict-sql.conf.ext
+    echo "connect = host=$MYSQL_HOST port=$MYSQL_PORT_NR dbname=$MYSQL_DATABASE user=$MYSQL_USER password=$MYSQL_PASS" >> /etc/dovecot/dovecot-dict-sql.conf.ext
   fi
 
   if [ "$DOVECOT_QUERY_USER" -a ! "`cat /etc/dovecot/dovecot-sql.conf.ext | grep '^user_query ='`" ]; then

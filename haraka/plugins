@@ -75,8 +75,6 @@ spamassassin
 #karma
 
 # LOCAL DELIVERY
-# @todo get concrete Path from mysql???
-# @todo mailfrom is used for .Sent maildir which creates files which can't be used
 maildir
 
 # Disconnect client if they spew bad SMTP commands at us
