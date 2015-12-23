@@ -1,4 +1,4 @@
-#connect = host=localhost dbname=mails user=testuser password=pass
+connect=
 
 # CREATE TABLE quota (
 #   username varchar(100) not null,
