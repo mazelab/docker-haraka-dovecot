@@ -39,4 +39,4 @@ VOLUME ["/srv/haraka/", "/data/", "/etc/dovecot/", "/var/log/"]
 
 ENTRYPOINT ["/entrypoint.sh"]
 
-CMD ["supervisord"]
+CMD ["supervisord", "-c", "/etc/supervisor.d/supervisord.ini"]
