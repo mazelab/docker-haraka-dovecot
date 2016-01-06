@@ -52,15 +52,15 @@ mail_from.is_resolvable
 # RCPT TO
 # At least one rcpt_to plugin is REQUIRED for inbound email. The simplest
 # plugin is in_host_list, see 'haraka -h rcpt_to.in_host_list' to configure.
+aliases_mysql
 #rcpt_to.in_host_list
 #rcpt_to.qmail_deliverable
 #rcpt_to.ldap
 #rcpt_to.routes
 rcpt_to.mysql
 
-# ALIASES
-# action or change the RCPT address in a number of ways (eg. Forwarder)
-aliases_mysql
+# RCPT TO OK
+# Plugins that run for each accepted rcpt
 quota_mysql
 
 # DATA

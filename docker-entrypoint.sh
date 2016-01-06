@@ -15,7 +15,7 @@ function initHaraka() {
 
     # add plugin files
     mkdir -p $HARAKA_DIR/plugins/auth
-    cp $HARAKA_DEFAULT_PLUGINS/*.js $HARAKA_DIR/plugins/.
+    cp $HARAKA_DEFAULT_PLUGINS/plugins/*.js $HARAKA_DIR/plugins/.
 
     # add plugin config
     cp $HARAKA_DEFAULT_PLUGINS/config/* $HARAKA_DIR/config/.

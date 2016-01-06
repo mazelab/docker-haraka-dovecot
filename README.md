@@ -169,7 +169,8 @@ Hit enter and type exit to close the terminal.
 Generating a password string:
 
     docker exec mail-sample doveadm pw -s MD5-CRYPT -p thepassword
-    {MD5-CRYPT}$1$DpBbHS.2$vHGFpWG4V0aR24JpkiusC/ -> password string is $1$DpBbHS.2$vHGFpWG4V0aR24JpkiusC/
+    {MD5-CRYPT}$1$DpBbHS.2$vHGFpWG4V0aR24JpkiusC/ 
+    # -> password string is $1$DpBbHS.2$vHGFpWG4V0aR24JpkiusC/
 
 Go into mysql again:
 
@@ -191,11 +192,3 @@ Use query to add new users:
     INSERT INTO `aliases` (email, action, config) VALUES('forward@test.dev','alias', 'noquota@test.dev');
 
     INSERT INTO `aliases` (email, action, config) VALUES('quotas@test.dev','alias', '100quota@test.dev|1quota@test.dev');
-
-
-# Todo
-
-- haraka quota and alias plugin not called correctly (rcpt hooks stop on first OK), maybe wrong hook 
-- get concrete Path from mysql???
-- mailfrom is used for .Sent maildir which creates files which can't be used
-- loglvl for progs from docker env

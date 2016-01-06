@@ -8,7 +8,7 @@ RUN adduser -u 127 dovecot -H -D -s /bin/false 137 && adduser -u 128 dovenull -H
       wget -O /tmp/haraka-plugins.zip https://github.com/mazelab/haraka-plugins/archive/master.zip && \
       unzip /tmp/haraka-plugins.zip -d /tmp && \
       cp -R /tmp/haraka-plugins-master/* /default/haraka-plugins/. && \
-      wget -O /default/haraka-plugins/maildir.js https://raw.githubusercontent.com/madeingnecca/haraka-plugins/master/maildir.js && \
+      wget -O /default/haraka-plugins/plugins/maildir.js https://raw.githubusercontent.com/madeingnecca/haraka-plugins/master/maildir.js && \
       apk del --purge openssl python make g++ wget && \
       rm -r /tmp/* /etc/dovecot/*
 
