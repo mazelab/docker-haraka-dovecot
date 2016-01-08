@@ -75,7 +75,7 @@ spamassassin
 #karma
 
 # LOCAL DELIVERY
-maildir
+queue/lmtp
 
 # Disconnect client if they spew bad SMTP commands at us
 max_unrecognized_commands
