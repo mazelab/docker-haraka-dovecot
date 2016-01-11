@@ -57,7 +57,7 @@ aliases_mysql
 #rcpt_to.qmail_deliverable
 #rcpt_to.ldap
 #rcpt_to.routes
-rcpt_to.mysql
+rcpt_to.dovecot_deliverable
 
 # RCPT TO OK
 # Plugins that run for each accepted rcpt
